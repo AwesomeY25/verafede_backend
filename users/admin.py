@@ -5,7 +5,7 @@ from .models import UserAccount, Intern, Task, TaskAssignment, Department, Depar
 
 @admin.register(UserAccount)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('user_id', 'username', 'email', 'timestamp')
+    list_display = ('id', 'username', 'email', 'timestamp')
 
 @admin.register(Intern)
 class InternAdmin(admin.ModelAdmin):
@@ -17,15 +17,15 @@ class TaskAdmin(admin.ModelAdmin):
     
 @admin.register(TaskAssignment)
 class TaskAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('task_assignment_id', 'intern_id', 'task_id', 'task_status', 'date_started', 'file_submission')
+    list_display = ('id', 'intern_id', 'task_id', 'task_status', 'date_started', 'file_submission')
     
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display=('department_id','department_name')
 
 @admin.register(DepartmentSupervisor)
-class DepartmentAdmin(admin.ModelAdmin):
-    list_display=('department_id','user_id')
+class DepartmentSupervisorAdmin(admin.ModelAdmin):
+    list_display=('dept_acct','department')
     
 @admin.register(Workload)
 class WorkloadAdmin(admin.ModelAdmin):
