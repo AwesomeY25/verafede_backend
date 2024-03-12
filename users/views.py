@@ -112,11 +112,7 @@ def get_all_intern(request):
              'start_date': intern.start_date,
              'end_date': intern.end_date,
              'nda_file': intern.nda_file} for intern in interns]
-    json_data = json.dumps(data, indent=4)
-    response = HttpResponse(json_data, content_type='application/json')
-    response['Content-Disposition'] = 'attachment; filename="interns.json"'
-    
-    return response
+    return JsonResponse(data, safe=False)
 
 @csrf_exempt
 def get_intern(request, intern_id):
@@ -309,12 +305,12 @@ def create_task_assignment(request):
     
 # Return all task assignments as a list
 @csrf_exempt
-def get_all_task_assignment():
+def get_all_task_assignment(request):
     return TaskAssignment.objects.all()
 
 # Return all tasks as a list
 @csrf_exempt
-def get_all_task():
+def get_all_task(request):
     return Task.objects.all()
 
 # Return a specific task assignment by ID
