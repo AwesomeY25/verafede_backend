@@ -92,7 +92,7 @@ def get_all_intern(request):
     sort_by = request.GET.get('sort_by', 'intern_id')  # Default sort by intern_id
 
     # Check if the sort_by field is valid
-    valid_sort_fields = ['intern_id', 'gender', 'birthday', 'mobile_number', 'school', 'year_level', 'degree', 'internship_type', 'school_coordinator', 'start_date', 'end_date', 'nda_file']
+    valid_sort_fields = ['id', 'gender', 'birthday', 'mobile_number', 'school', 'year_level', 'degree', 'internship_type', 'school_coordinator', 'start_date', 'end_date', 'nda_file']
     if sort_by not in valid_sort_fields:
         return JsonResponse({'error': 'Invalid sort field'}, status=400)
 

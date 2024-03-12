@@ -87,9 +87,6 @@ class Task(models.Model):
     task_estimated_time_to_finish = models.FloatField()
     task_points = models.IntegerField(default=0)
 
-    def get_task_id(self):
-        return str(self.task_id)
-
     def __str__(self):
         return f"Task ID: {self.task_id}"
 
