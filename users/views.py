@@ -343,3 +343,13 @@ def delete_task(request, task_id):
         return JsonResponse({'message': 'Task and connected task assignments deleted successfully'}, status=200)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+@csrf_exempt
+def handle_vercel_request(request):
+    if request.method == 'GET':
+        data = {
+            'message': 'Hello from Django!',
+        }
+        return JsonResponse(data)
+    else:
+        return JsonResponse({'error': 'Invalid request method'})
