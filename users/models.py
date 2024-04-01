@@ -105,7 +105,7 @@ class TaskAssignment(models.Model):
     file_submission = models.CharField(max_length=255, verbose_name='File Submission', null=True, blank=True)
 
     def __str__(self):
-        return f"Task Assignment ID: {self.task_assignment_id}"
+        return f"Task Assignment ID: {self.id}"
 
 
 class Department(models.Model):

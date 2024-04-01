@@ -131,17 +131,28 @@ def get_all_intern(request):
 def get_intern(request, intern_id):
     intern = get_object_or_404(Intern, intern_id=intern_id)
     data = {
-        'gender': intern.gender,
-        'birthday': intern.birthday,
-        'mobile_number': intern.mobile_number,
-        'school': intern.school,
-        'year_level': intern.year_level,
-        'degree': intern.degree,
-        'internship_type': intern.internship_type,
-        'school_coordinator': intern.school_coordinator,
-        'start_date': intern.start_date,
-        'end_date': intern.end_date,
-        'nda_file': intern.nda_file
+            'intern_id': intern.intern_id,
+            'username': intern.user.username,
+            'first_name': intern.user.first_name,
+            'last_name': intern.user.last_name,
+            'mid_initial': intern.user.mid_initial,
+            'account_type': intern.user.account_type,
+            'email': intern.user.email,
+            'gender': intern.gender,
+            'intern_status': intern.intern_status,
+            'birthday': intern.birthday,
+            'mobile_number': intern.mobile_number,
+            'school': intern.school,
+            'year_level': intern.year_level,
+            'degree': intern.degree,
+            'internship_type': intern.internship_type,
+            'school_coordinator': intern.school_coordinator,
+            'start_date': intern.start_date,
+            'end_date': intern.end_date,
+            'nda_file': intern.nda_file,
+            'min_workload_threshold': intern.min_workload_threshold,
+            'max_workload_threshold': intern.max_workload_threshold,
+            'intern_head_status': intern.intern_head_status,
     }
     return JsonResponse(data)
 
@@ -251,7 +262,7 @@ def create_task_and_assignment(request):
             if task_form.is_valid():
                 task = task_form.save()  # Save the Task object to get the task_id
                 task_id = task.task_id  # Retrieve the task_id from the saved Task object
-                interns = data.get('intern_id', [])
+                interns = data.get('interns')
                 
                 for intern_id in interns:
                     task_assignment_data = {
@@ -316,22 +327,66 @@ def create_task_assignment(request):
 # Return all task assignments as a list
 @csrf_exempt
 def get_all_task_assignment(request):
-    return TaskAssignment.objects.all()
+    task_assignments = []
+    task_assignments_queryset = TaskAssignment.objects.all()
+    for task_assignment in task_assignments_queryset:
+        task_assignment_dict = {
+            'id': task_assignment.id,
+            'intern_id': task_assignment.intern_id.id,
+            'task_id': task_assignment.task_id.task_id,
+            'task_status': task_assignment.task_status,
+            'date_started': task_assignment.date_started,
+            'file_submission': task_assignment.file_submission
+        }
+        task_assignments.append(task_assignment_dict)
+    return JsonResponse(task_assignments, safe=False)
 
 # Return all tasks as a list
 @csrf_exempt
 def get_all_task(request):
-    return Task.objects.all()
+    tasks = []
+    tasks_queryset = Task.objects.all()
+    for task in tasks_queryset:
+        task_dict = {
+            'task_id': task.task_id,
+            'task_name': task.task_name,
+            'task_description': task.task_description,
+            'task_date_created': task.task_date_created,
+            'task_due_date': task.task_due_date,
+            'task_estimated_time_to_finish': task.task_estimated_time_to_finish,
+            'task_points': task.task_points
+        }
+        tasks.append(task_dict)
+    return JsonResponse(tasks, safe=False)
 
 # Return a specific task assignment by ID
 @csrf_exempt
-def get_task_assignment(task_assignment_id):
-    return TaskAssignment.objects.get(task_assignment_id=task_assignment_id)
+def get_task_assignment(request, task_assignment_id):
+    task_assignment = TaskAssignment.objects.get(id=task_assignment_id)
+    task_assignment_dict = {
+        'id': task_assignment.id,
+        'intern_id': task_assignment.intern_id.id,
+        'task_id': task_assignment.task_id.task_id,
+        'task_status': task_assignment.task_status,
+        'date_started': task_assignment.date_started,
+        'file_submission': task_assignment.file_submission
+    }
+    return JsonResponse(task_assignment_dict)
 
 # Return a specific task by ID
 @csrf_exempt
-def get_task(task_id):
-    return Task.objects.get(task_id=task_id)
+def get_task(request, task_id):
+    task = Task.objects.get(task_id=task_id)
+    task_dict = {
+        'task_id': task.task_id,
+        'task_name': task.task_name,
+        'task_description': task.task_description,
+        'task_date_created': task.task_date_created,
+        'task_due_date': task.task_due_date,
+        'task_estimated_time_to_finish': task.task_estimated_time_to_finish,
+        'task_points': task.task_points
+    }
+    return JsonResponse(task_dict)
 
 @csrf_exempt
 def delete_task_assignment(request, id):
