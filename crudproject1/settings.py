@@ -80,6 +80,7 @@ WSGI_APPLICATION = 'crudproject1.wsgi.application'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",  # Add your Vue.js app's origin
+    "verafede-frontend-livid.vercel.app"
 ]
 
 CORS_ALLOW_METHODS = [
@@ -108,20 +109,23 @@ CORS_ALLOW_HEADERS = [
 
 DATABASES = {
     'default': {
+        # For Local
+        # 'NAME': 'verafede_db', 
+        # 'USER': 'postgres',
+        # 'PASSWORD': 'user',
+        # 'HOST': '127.0.0.1', 
+        # 'PORT': '5432'
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'verafede_db', 
-        'USER': 'postgres',
-        'PASSWORD': 'user',
-        'HOST': '127.0.0.1', 
-        'PORT': '5432'
-        # 'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        # 'NAME': os.environ.get("DB_NAME"),
-        # 'USER': os.environ.get("DB_USER"),
-        # 'PASSWORD': os.environ.get("DB_PASSWORD"),
-        # 'HOST': os.environ.get("DB_HOST"),
-        # 'PORT': os.environ.get("DB_PORT"),
+        
+        # For Prod
+        'NAME': os.environ.get("DB_NAME"),
+        'USER': os.environ.get("DB_USER"),
+        'PASSWORD': os.environ.get("DB_PASSWORD"),
+        'HOST': os.environ.get("DB_HOST"),
+        'PORT': os.environ.get("DB_PORT"),
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -147,7 +151,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'HongKong'
 
 USE_I18N = True
 
