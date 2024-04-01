@@ -1,9 +1,11 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, get_object_or_404, redirect
 import json
+from django.forms import model_to_dict
 from .forms import UserAccountForm, InternForm, TaskForm, TaskAssignmentForm, ConcernForm, WorkloadForm
 from django.http import JsonResponse, HttpResponse
 from .models import UserAccount, Intern, TaskAssignment, Task, Workload, Concern
+from django.core import serializers
 import random
 import string
 import datetime
@@ -516,5 +518,82 @@ def create_concern(request):
                 return JsonResponse({'error': 'Invalid form data'}, status=400)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def get_unverified_interns(request):
+    unverified_interns = Intern.objects.filter(intern_status="")
+    data = [{'intern_id': intern.intern_id,
+            'username': intern.user.username,
+            'first_name': intern.user.first_name,
+            'last_name': intern.user.last_name,
+            'mid_initial': intern.user.mid_initial,
+            'account_type': intern.user.account_type,
+            'email': intern.user.email,
+            'gender': intern.gender,
+            'intern_status': intern.intern_status,
+            'birthday': intern.birthday,
+            'mobile_number': intern.mobile_number,
+            'school': intern.school,
+            'year_level': intern.year_level,
+            'degree': intern.degree,
+            'internship_type': intern.internship_type,
+            'school_coordinator': intern.school_coordinator,
+            'start_date': intern.start_date,
+            'end_date': intern.end_date,
+            'nda_file': intern.nda_file,
+            'min_workload_threshold': intern.min_workload_threshold,
+            'max_workload_threshold': intern.max_workload_threshold,
+            'intern_head_status': intern.intern_head_status,
+    } for intern in unverified_interns]
+    return JsonResponse(data, safe=False)
+
+def get_department_interns(request, department_id):
+    unverified_interns = Intern.objects.filter(department_id=department_id)
+    data = [{'intern_id': intern.intern_id,
+            'username': intern.user.username,
+            'first_name': intern.user.first_name,
+            'last_name': intern.user.last_name,
+            'mid_initial': intern.user.mid_initial,
+            'account_type': intern.user.account_type,
+            'email': intern.user.email,
+            'gender': intern.gender,
+            'intern_status': intern.intern_status,
+            'birthday': intern.birthday,
+            'mobile_number': intern.mobile_number,
+            'school': intern.school,
+            'year_level': intern.year_level,
+            'degree': intern.degree,
+            'internship_type': intern.internship_type,
+            'school_coordinator': intern.school_coordinator,
+            'start_date': intern.start_date,
+            'end_date': intern.end_date,
+            'nda_file': intern.nda_file,
+            'min_workload_threshold': intern.min_workload_threshold,
+            'max_workload_threshold': intern.max_workload_threshold,
+            'intern_head_status': intern.intern_head_status,
+    } for intern in unverified_interns]
+    return JsonResponse(data, safe=False)
+
+@csrf_exempt
+def verify_intern(request, intern_id):
+    intern = get_object_or_404(Intern, intern_id=intern_id)
+    if request.method == 'PATCH':
+        intern.intern_status = "Active"
+        intern.save(update_fields=['intern_status'])
+        data = model_to_dict(intern)
+        return JsonResponse({'intern': data}, status=200)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def decline_intern(request, intern_id):
+    intern = get_object_or_404(Intern, intern_id=intern_id)
+    if request.method == 'PATCH':
+        intern.intern_status = "Onboarded"
+        intern.save(update_fields=['intern_status'])
+        data = model_to_dict(intern)
+        return JsonResponse({'intern': data}, status=200)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)

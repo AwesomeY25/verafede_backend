@@ -43,4 +43,9 @@ urlpatterns = [
     # Workload URLs
     # path('workload/generate', userviews.create_workload_report, name='create_workload_report'),  # Added create_workload_report
     path('workloads/', userviews.workload_list, name='workload_list'),  # Added get_workloads
+    
+    path('unverified/', userviews.get_unverified_interns, name='get_unverified_interns'),
+    path('verify/<int:intern_id>/', userviews.verify_intern, name='verify_intern'),
+    path('decline/<int:intern_id>/', userviews.decline_intern, name='decline_intern'),
+    path('all_interns/<int:department_id>/', userviews.get_department_interns, name='get_department_interns'),
 ]
