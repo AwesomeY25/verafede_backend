@@ -42,5 +42,5 @@ urlpatterns = [
     
     # Workload URLs
     # path('workload/generate', userviews.create_workload_report, name='create_workload_report'),  # Added create_workload_report
-    # path('workloads/', userviews.get_workloads, name='get_workloads'),  # Added get_workloads
+    path('workloads/', userviews.workload_list, name='workload_list'),  # Added get_workloads
 ]

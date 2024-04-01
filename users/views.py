@@ -421,13 +421,27 @@ def handle_vercel_request(request):
     
 # Workload CRUD views
 
+import json
+
 def workload_list(request):
     workloads = Workload.objects.all()
-    return render(request, 'workload_list.html', {'workloads': workloads})
+    data = [{
+        'week_date': workload.week_date,
+        'intern_id': workload.intern_id_id,
+        'workload_points': workload.workload_points,
+        'workload_tag': workload.workload_tag}
+        for workload in workloads]
+    return JsonResponse(data, safe=False)
 
 def workload_detail(request, workload_id):
     workload = get_object_or_404(Workload, pk=workload_id)
-    return render(request, 'workload_detail.html', {'workload': workload})
+    data = {
+        'week_date': workload.week_date,
+        'intern_id': workload.intern_id_id,
+        'workload_points': workload.workload_points,
+        'workload_tag': workload.workload_tag
+    }
+    return JsonResponse(data, safe=False)
 
 def workload_create(request):
     if request.method == 'POST':
@@ -437,7 +451,7 @@ def workload_create(request):
             return redirect('workload_list')
     else:
         form = WorkloadForm()
-    return render(request, 'workload_form.html', {'form': form})
+    return JsonResponse({'form': form.as_table()})
 
 def workload_update(request, workload_id):
     workload = get_object_or_404(Workload, pk=workload_id)
@@ -448,14 +462,14 @@ def workload_update(request, workload_id):
             return redirect('workload_list')
     else:
         form = WorkloadForm(instance=workload)
-    return render(request, 'workload_form.html', {'form': form})
+    return JsonResponse({'form': form.as_table()})
 
 def workload_delete(request, workload_id):
     workload = get_object_or_404(Workload, pk=workload_id)
     if request.method == 'POST':
         workload.delete()
         return redirect('workload_list')
-    return render(request, 'workload_confirm_delete.html', {'workload': workload})
+    return JsonResponse({'workload': {'id': workload.id}})
 
 # Concern CRUD views
 

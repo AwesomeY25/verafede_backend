@@ -140,7 +140,7 @@ class Workload(models.Model):
 
     def __str__(self):
         return f"Workload ID: {self.workload_id}"
-
+    
 class Concern(models.Model):
     class AcademicWorkload(models.TextChoices):
         FULL_SEMESTER = 'Full Semester', 'Yes (taking full semester)'
