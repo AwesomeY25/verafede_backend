@@ -44,4 +44,4 @@ class WorkloadForm(forms.ModelForm):
 class ConcernForm(forms.ModelForm):
     class Meta:
         model = Concern
-        fields = '__all__'
+        fields = [    "intern_id", "concern_description", "academic_workload", "other_commitments"]

@@ -21,7 +21,6 @@ class UserAccount(models.Model):
     def __str__(self):
         return self.username
 
-
 class Intern(models.Model):
     GENDER_CHOICES = [
         ('Female', 'Female'),
@@ -44,6 +43,7 @@ class Intern(models.Model):
     ]
     # Auto Add
     intern_id = models.AutoField(primary_key=True, verbose_name='Intern ID')
+    user = models.OneToOneField(UserAccount, on_delete=models.CASCADE, related_name='intern')
     department_id = models.IntegerField()
     # Got
     gender = models.CharField(max_length=20, choices=GENDER_CHOICES)
@@ -141,7 +141,6 @@ class Workload(models.Model):
     def __str__(self):
         return f"Workload ID: {self.workload_id}"
 
-
 class Concern(models.Model):
     class AcademicWorkload(models.TextChoices):
         FULL_SEMESTER = 'Full Semester', 'Yes (taking full semester)'
@@ -153,7 +152,7 @@ class Concern(models.Model):
     concern_description = models.TextField()
     academic_workload = models.CharField(max_length=50, choices=AcademicWorkload.choices)
     other_commitments = models.TextField()
-    date_filed = models.DateField()
+    date_filed = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Concern ID: {self.concern_id}"

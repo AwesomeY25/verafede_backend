@@ -34,10 +34,11 @@ urlpatterns = [
     path('task/<int:id>/', userviews.get_task, name='get_task'), 
     path('task/assign/<int:id>/', userviews.get_task_assignment, name='get_task_and_assignment'),  # getting all assigned task to a person (id)
     path('handle-vercel-request/', userviews.handle_vercel_request, name='handle_vercel_request'),
+    
     # Concern URLs
-    # path('concern/add/', csrf_exempt(userviews.create_concern), name='create_concern'),  # Added create_concern
-    # path('concern/update/<int:id>/', userviews.edit_concern, name='edit_concern'),  # Added edit_concern
-    # path('concerns/', userviews.get_concerns, name='get_concerns'),  # Added get_concerns
+    path('concern/add/', csrf_exempt(userviews.create_concern), name='create_concern'),  # Added create_concern
+    path('concerns/', userviews.get_concerns, name='get_concerns'),  # Added get_concerns
+    path('concern/<int:id>/', userviews.concern_detail, name='concern_detail'),  # Added get_concerns
     
     # Workload URLs
     # path('workload/generate', userviews.create_workload_report, name='create_workload_report'),  # Added create_workload_report
