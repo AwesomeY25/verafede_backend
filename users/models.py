@@ -76,8 +76,7 @@ class Intern(models.Model):
 
     def __str__(self):
         return f"Intern ID: {self.intern_id}"
-
-
+    
 class Task(models.Model):
     task_id = models.AutoField(primary_key=True)
     task_name = models.CharField(max_length=255)

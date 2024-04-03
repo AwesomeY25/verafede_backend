@@ -377,8 +377,8 @@ def get_task_assignment(request, task_assignment_id):
 
 # Return a specific task by ID
 @csrf_exempt
-def get_task(request, task_id):
-    task = Task.objects.get(task_id=task_id)
+def get_task(request, id):
+    task = Task.objects.get(task_id=id)
     task_dict = {
         'task_id': task.task_id,
         'task_name': task.task_name,
