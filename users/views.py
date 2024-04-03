@@ -425,11 +425,16 @@ def handle_vercel_request(request):
 
 import json
 
+from django.db.models import F
+
 def workload_list(request):
-    workloads = Workload.objects.all()
+    workloads = Workload.objects.all().select_related('intern_id__intern__user')
     data = [{
         'week_date': workload.week_date,
         'intern_id': workload.intern_id_id,
+        'intern_name': '{}, {}'.format(workload.intern_id.intern.user.last_name, workload.intern_id.intern.user.first_name),
+        'start_date': workload.intern_id.intern.start_date,
+        'end_date': workload.intern_id.intern.end_date,
         'workload_points': workload.workload_points,
         'workload_tag': workload.workload_tag}
         for workload in workloads]

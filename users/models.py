@@ -132,7 +132,7 @@ class Workload(models.Model):
         OVERLOAD = 'Overload', 'Overload'
 
     workload_id = models.BigAutoField(primary_key=True)
-    intern_id = models.ForeignKey(UserAccount, on_delete=models.CASCADE, verbose_name='Intern User ID')
+    intern_id = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
     week_date = models.DateField()
     workload_points = models.PositiveSmallIntegerField(default=0)
     workload_tag = models.CharField(max_length=20, choices=WorkloadTag.choices)
