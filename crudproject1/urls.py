@@ -52,6 +52,7 @@ urlpatterns = [
     path('workloads/intern/<int:id>/', userviews.intern_workload, name='intern_workload'),
     
     path('unverified/', userviews.get_unverified_interns, name='get_unverified_interns'),
+    path('intern/status/<int:intern_id>/', userviews.update_intern_status, name='update_intern_status'),
     path('verify/<int:intern_id>/', userviews.verify_intern, name='verify_intern'),
     path('decline/<int:intern_id>/', userviews.decline_intern, name='decline_intern'),
     path('all_interns/<int:department_id>/', userviews.get_department_interns, name='get_department_interns'),

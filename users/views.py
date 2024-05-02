@@ -664,6 +664,18 @@ def verify_intern(request, intern_id):
         return JsonResponse({'intern': data}, status=200)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+@csrf_exempt
+def update_intern_status(request, intern_id):
+    intern = get_object_or_404(Intern, intern_id=intern_id)
+    data = json.loads(request.body)
+    if request.method == 'PATCH':
+        intern.intern_status = data.get('intern_status')
+        intern.save(update_fields=['intern_status'])
+        data = model_to_dict(intern)
+        return JsonResponse({'intern': data}, status=200)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 @csrf_exempt
 def decline_intern(request, intern_id):
