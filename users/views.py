@@ -265,10 +265,10 @@ def mark_undone(request, id):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 @csrf_exempt
-def edit_task(request, task_id):
-    task = get_object_or_404(Task, task_id=task_id)
+def edit_task(request, id):
+    task = get_object_or_404(Task, task_id=id)
     if request.method == 'PUT':
-        data = request.PUT
+        data = json.loads(request.body.decode('utf-8'))
         task.task_name = data.get('task_name')
         task.task_description = data.get('task_description')
         task.task_date_created = data.get('task_date_created')
