@@ -1,5 +1,6 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth import authenticate, login
 import json
 from django.forms import model_to_dict
 from .forms import UserAccountForm, InternForm, TaskForm, TaskAssignmentForm, ConcernForm, WorkloadForm
@@ -34,13 +35,15 @@ def create_user(request):
             return JsonResponse({'error': 'Invalid data'}, status=400)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
+# not tracked
 @csrf_exempt
 def get_all_user(request):
     users = UserAccount.objects.all()
     data = [{'id': user.id, 'username': user.username} for user in users]
-    return JsonResponse(data, safe=False)
+    return JsonResponse(data, safe=True)
 
+# not tracked
 @csrf_exempt
 def get_user(request, id):
     user = get_object_or_404(UserAccount, id=id)
@@ -62,6 +65,7 @@ def delete_user(request, id):
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+# not tested
 @csrf_exempt
 def update_user(request, id):
     user = get_object_or_404(UserAccount, user_id=id)
@@ -171,7 +175,8 @@ def delete_intern(request, intern_id):
 def update_intern(request, intern_id):
     intern = get_object_or_404(Intern, intern_id=intern_id)
     if request.method == 'PATCH':
-        form = InternForm(request.POST, instance=intern, partial=True)
+        data = json.loads(request.body.decode('utf-8'))
+        form = InternForm(data, instance=intern)
         if form.is_valid():
             form.save()
             return JsonResponse({'message': 'Intern updated successfully'}, status=200)
@@ -222,19 +227,40 @@ def create_user_and_intern(request):
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-# TASK FUNCTIONS
+from django.views.decorators.http import require_http_methods
+
 @csrf_exempt
-def edit_task_assignment(request, task_assignment_id):
-    task_assignment = get_object_or_404(TaskAssignment, task_assignment_id=task_assignment_id)
+def edit_task_assignment(request, id):
+    task_assignment = get_object_or_404(TaskAssignment, id=id)
     if request.method == 'PUT':
-        data = request.PUT
-        task_assignment.intern_id = data.get('intern_id')
-        task_assignment.task_id = data.get('task_id')
-        task_assignment.task_status = data.get('task_status')
-        task_assignment.date_started = data.get('date_started')
-        task_assignment.file_submission = data.get('file_submission')
-        task_assignment.save()
-        return JsonResponse({'message': 'Task assignment updated successfully'}, status=200)
+        data = json.loads(request.body.decode('utf-8'))
+        form = TaskAssignmentForm(data, instance=task_assignment)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'message': 'Task assignment updated successfully'}, status=200)
+        else:
+            return JsonResponse(form.errors, status=400)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def mark_done(request, id):
+    task_assignment = get_object_or_404(TaskAssignment, id=id)
+    if request.method == 'PATCH':
+        task_assignment.task_status  = "Done"
+        task_assignment.save(update_fields=['task_status'])
+        data = model_to_dict(task_assignment)
+        return JsonResponse({'task_assignment': data}, status=200)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+def mark_undone(request, id):
+    task_assignment = get_object_or_404(TaskAssignment, id=id)
+    if request.method == 'PATCH':
+        task_assignment.task_status  = "In Progress"
+        task_assignment.save(update_fields=['task_status'])
+        data = model_to_dict(task_assignment)
+        return JsonResponse({'task_assignment': data}, status=200)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -363,12 +389,24 @@ def get_all_task(request):
 
 # Return a specific task assignment by ID
 @csrf_exempt
-def get_task_assignment(request, task_assignment_id):
-    task_assignment = TaskAssignment.objects.get(id=task_assignment_id)
+def get_task_assignment(request, id):
+    task_assignment = TaskAssignment.objects.get(id=id)
     task_assignment_dict = {
         'id': task_assignment.id,
         'intern_id': task_assignment.intern_id.id,
         'task_id': task_assignment.task_id.task_id,
+        'task_status': task_assignment.task_status,
+        'date_started': task_assignment.date_started,
+        'file_submission': task_assignment.file_submission
+    }
+    return JsonResponse(task_assignment_dict)
+
+@csrf_exempt
+def get_task_assigned(request, intern_id):
+    task_assignment = TaskAssignment.objects.get(intern=intern_id)
+    task_assignment_dict = {
+        'id': task_assignment.id,
+        'task_name': task_assignment.task_id.task_name,
         'task_status': task_assignment.task_status,
         'date_started': task_assignment.date_started,
         'file_submission': task_assignment.file_submission
@@ -421,14 +459,26 @@ def handle_vercel_request(request):
     else:
         return JsonResponse({'error': 'Invalid request method'})
     
-# Workload CRUD views
-
-import json
-
-from django.db.models import F
-
 def workload_list(request):
     workloads = Workload.objects.all().select_related('intern_id__intern__user')
+    data = [{
+        'week_date': workload.week_date,
+        'intern_id': workload.intern_id_id,
+        'intern_name': '{}, {}'.format(workload.intern_id.intern.user.last_name, workload.intern_id.intern.user.first_name),
+        'start_date': workload.intern_id.intern.start_date,
+        'end_date': workload.intern_id.intern.end_date,
+        'workload_points': workload.workload_points,
+        'workload_tag': workload.workload_tag}
+        for workload in workloads]
+    return JsonResponse(data, safe=False)
+
+def intern_workload(request, id):
+    try:
+        user_account = UserAccount.objects.get(pk=id)
+    except ObjectDoesNotExist:
+        return JsonResponse({'error': 'Account not found'}, status=404)
+
+    workloads = Workload.objects.filter(intern_id=user_account)
     data = [{
         'week_date': workload.week_date,
         'intern_id': workload.intern_id_id,
@@ -450,35 +500,58 @@ def workload_detail(request, workload_id):
     }
     return JsonResponse(data, safe=False)
 
-def workload_create(request):
+
+# assign workload
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
+
+@csrf_exempt
+def create_workload(request):
     if request.method == 'POST':
-        form = WorkloadForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('workload_list')
+        data = json.loads(request.body)
+        intern_id = data.get('intern_id')
+        week_date = data.get('week_date')
+
+        try:
+            user_account = UserAccount.objects.get(id=intern_id)
+            intern = user_account.intern
+            minimum_threshold = intern.min_workload_threshold
+            maximum_threshold = intern.max_workload_threshold
+
+        except ObjectDoesNotExist:
+            return JsonResponse({'error': 'Intern not found'}, status=404)
+
+        task_assignments = TaskAssignment.objects.filter(intern_id=user_account)
+        workload_points = 0
+        for task_assignment in task_assignments:
+            task = Task.objects.get(task_id=task_assignment.task_id.task_id)
+            workload_points += (task.task_points * task.task_estimated_time_to_finish) / 10
+
+        if workload_points < minimum_threshold:
+            workload_tag='Underload'
+        elif workload_points == minimum_threshold:
+            workload_tag='Minimum Capacity'
+        elif workload_points == maximum_threshold:
+            workload_tag='Maximum Capacity'
+        elif workload_points < maximum_threshold:
+            workload_tag='Overload'
+        else:
+            workload_tag='In Capacity'
+
+        workload = Workload(
+            intern_id=user_account,
+            week_date=week_date,
+            workload_points=workload_points,
+            workload_tag=workload_tag
+        )
+        
+        workload.save()
+
+        return JsonResponse({'message': 'Workload created successfully'}, status=201)
     else:
-        form = WorkloadForm()
-    return JsonResponse({'form': form.as_table()})
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-def workload_update(request, workload_id):
-    workload = get_object_or_404(Workload, pk=workload_id)
-    if request.method == 'POST':
-        form = WorkloadForm(request.POST, instance=workload)
-        if form.is_valid():
-            form.save()
-            return redirect('workload_list')
-    else:
-        form = WorkloadForm(instance=workload)
-    return JsonResponse({'form': form.as_table()})
-
-def workload_delete(request, workload_id):
-    workload = get_object_or_404(Workload, pk=workload_id)
-    if request.method == 'POST':
-        workload.delete()
-        return redirect('workload_list')
-    return JsonResponse({'workload': {'id': workload.id}})
-
-# Concern CRUD views
+# Concern CRUD views 
 
 def get_concerns(request):
     concerns = Concern.objects.all()
@@ -493,8 +566,8 @@ def get_concerns(request):
     ]
     return JsonResponse(concerns_data, safe=False)
 
-def concern_detail(request, concern_id):
-    concern = get_object_or_404(Concern, pk=concern_id)
+def concern_detail(request, id):
+    concern = get_object_or_404(Concern, pk=id)
     concern_data = {
         'concern_id': concern.concern_id,
         'concern_description': concern.concern_description,
@@ -602,3 +675,18 @@ def decline_intern(request, intern_id):
         return JsonResponse({'intern': data}, status=200)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def log_in(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        username = data.get('username')
+        password = data.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid username or password'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'})

@@ -4,6 +4,7 @@ from django.urls import path, include
 from users import views as userviews
 
 urlpatterns = [
+    path('',  csrf_exempt(userviews.log_in), name='log_in'),
     path('admin/', admin.site.urls),
         
     # User URLs
@@ -29,9 +30,13 @@ urlpatterns = [
     path('assign/new/<int:id>/', csrf_exempt(userviews.create_task_assignment), name='create_task_assignment'),
     path('assign/delete/<int:id>/', csrf_exempt(userviews.delete_task_assignment), name='delete_task_assignment'),
     path('task/delete/<int:task_id>/', userviews.delete_task, name='delete_task'), 
+    path('task/update/<int:id>/', userviews.edit_task_assignment, name='edit_task_assignment'), 
     path('tasks/', csrf_exempt(userviews.get_all_task), name='get_all_task'),  
-    path('tasks/assigned', csrf_exempt(userviews.get_all_task_assignment), name='get_all_task_assignment'),
+    path('tasks/assigned/', csrf_exempt(userviews.get_all_task_assignment), name='get_all_task_assignment'),
+    path('task/done/<int:id>/', csrf_exempt(userviews.mark_done), name='mark_done'), 
+    path('task/undone/<int:id>/', csrf_exempt(userviews.mark_undone), name='mark_undone'), 
     path('task/<int:id>/', csrf_exempt(userviews.get_task), name='get_task'), 
+
     path('task/assign/<int:id>/', csrf_exempt(userviews.get_task_assignment), name='get_task_and_assignment'),  # getting all assigned task to a person (id)
     path('handle-vercel-request/', csrf_exempt(userviews.handle_vercel_request), name='handle_vercel_request'),
     
@@ -41,8 +46,10 @@ urlpatterns = [
     path('concern/<int:id>/', csrf_exempt(userviews.concern_detail), name='concern_detail'),  # Added get_concerns
     
     # Workload URLs
-    # path('workload/generate', userviews.create_workload_report, name='create_workload_report'),  # Added create_workload_report
-    path('workloads/', userviews.workload_list, name='workload_list'),  # Added get_workloads
+    path('workloads/', userviews.workload_list, name='workload_list'),
+    path('workload/<int:workload_id>/', userviews.workload_detail, name='workload_detail'),# Added get_workloads
+    path('workloads/new/', userviews.create_workload, name='create_workload'),
+    path('workloads/intern/<int:id>/', userviews.intern_workload, name='intern_workload'),
     
     path('unverified/', userviews.get_unverified_interns, name='get_unverified_interns'),
     path('verify/<int:intern_id>/', userviews.verify_intern, name='verify_intern'),
