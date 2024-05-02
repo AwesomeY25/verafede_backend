@@ -16,8 +16,7 @@ urlpatterns = [
     
     # Intern URLs
     path('intern/add/', csrf_exempt(userviews.create_intern), name='create_intern'),
-    path('interns/', csrf_exempt(userviews.get_all_intern), name='get_all_intern'),  # Changed get_all_intern to list_interns
-    path('intern/<int:intern_id>/', userviews.get_intern, name='get_intern'),
+    path('interns/', csrf_exempt(userviews.get_all_intern), name='get_all_intern'),
     path('intern/delete/<int:intern_id>/', userviews.delete_intern, name='delete_intern'),
     path('intern/update/<int:intern_id>/', userviews.update_intern, name='update_intern'),
 
@@ -31,12 +30,13 @@ urlpatterns = [
     path('assign/delete/<int:id>/', csrf_exempt(userviews.delete_task_assignment), name='delete_task_assignment'),
     path('task/delete/<int:task_id>/', userviews.delete_task, name='delete_task'), 
     path('assign/update/<int:id>/', userviews.edit_task_assignment, name='edit_task_assignment'), 
-    path('task/update/<int:id>/', userviews.edit_task, name='edit_task'), 
-    path('tasks/', csrf_exempt(userviews.get_all_task), name='get_all_task'),  
+    path('task/update/<int:id>/', userviews.update_task_and_assignment, name='update_task_and_assignment'), 
+    path('tasks/', csrf_exempt(userviews.get_all_task_and_assignments), name='get_all_task_and_assignments'),  
     path('tasks/assigned/', csrf_exempt(userviews.get_all_task_assignment), name='get_all_task_assignment'),
     path('task/done/<int:id>/', csrf_exempt(userviews.mark_done), name='mark_done'), 
     path('task/undone/<int:id>/', csrf_exempt(userviews.mark_undone), name='mark_undone'), 
     path('task/<int:id>/', csrf_exempt(userviews.get_task), name='get_task'), 
+
 
     path('task/assign/<int:id>/', csrf_exempt(userviews.get_task_assignment), name='get_task_and_assignment'),  # getting all assigned task to a person (id)
     path('handle-vercel-request/', csrf_exempt(userviews.handle_vercel_request), name='handle_vercel_request'),

@@ -48,6 +48,7 @@ class Intern(models.Model):
     # Got
     gender = models.CharField(max_length=20, choices=GENDER_CHOICES)
     intern_status = models.CharField(max_length=255)
+    required_hours  = models.IntegerField(null=True)
     # Got
     birthday = models.DateField()
     # Got

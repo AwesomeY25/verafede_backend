@@ -134,9 +134,52 @@ def get_all_intern(request):
     return JsonResponse(interns_data, safe=False)
 
 @csrf_exempt
-def get_intern(request, intern_id):
-    intern = get_object_or_404(Intern, intern_id=intern_id)
-    data = {
+def get_intern(request):
+    interns = Intern.objects.all()
+
+    # Parse and process query parameters
+    query_params = request.GET
+    filters = {
+        'department': 'department',
+        'start_date': 'start_date__gte',
+        'end_date': 'end_date__lte',
+        'intern_status': 'intern_status',
+        'search_query': 'username__icontains',
+        'searchQuery': '',
+        'sortBy': '',
+        'sortOrder': 'asc'
+    }
+
+    for param, field in filters.items():
+        value = query_params.get(param)
+        if value:
+            interns = interns.filter(**{field: value})
+
+    # Handle search_query to filter by username, first_name, and last_name
+    search_query = query_params.get('search_query')
+    if search_query:
+        interns = interns.filter(
+            Q(username__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query)
+        )
+
+    # Sort the data based on the query parameters
+    sortBy = query_params.get('sortBy', 'intern_id')
+    sortOrder = query_params.get('sortOrder', 'asc').lower()
+
+    # Ensure validity of sort_order
+    if sortOrder not in ['asc', 'desc']:
+        sortOrder = 'asc'
+
+    if sortOrder == 'desc':
+        interns = interns.order_by(f'-{sortBy}')
+    else:
+        interns = interns.order_by(sortBy)
+
+    # Convert the interns data to a list of dictionaries
+    data = [
+        {
             'intern_id': intern.intern_id,
             'username': intern.user.username,
             'first_name': intern.user.first_name,
@@ -155,12 +198,16 @@ def get_intern(request, intern_id):
             'school_coordinator': intern.school_coordinator,
             'start_date': intern.start_date,
             'end_date': intern.end_date,
+            'required_hours': intern.required_hours,
             'nda_file': intern.nda_file,
             'min_workload_threshold': intern.min_workload_threshold,
             'max_workload_threshold': intern.max_workload_threshold,
             'intern_head_status': intern.intern_head_status,
-    }
-    return JsonResponse(data)
+        }
+        for intern in interns
+    ]
+
+    return JsonResponse(data, safe=False)
 
 @csrf_exempt
 def delete_intern(request, intern_id):
@@ -230,20 +277,6 @@ def create_user_and_intern(request):
 from django.views.decorators.http import require_http_methods
 
 @csrf_exempt
-def edit_task_assignment(request, id):
-    task_assignment = get_object_or_404(TaskAssignment, id=id)
-    if request.method == 'PUT':
-        data = json.loads(request.body.decode('utf-8'))
-        form = TaskAssignmentForm(data, instance=task_assignment)
-        if form.is_valid():
-            form.save()
-            return JsonResponse({'message': 'Task assignment updated successfully'}, status=200)
-        else:
-            return JsonResponse(form.errors, status=400)
-    else:
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-@csrf_exempt
 def mark_done(request, id):
     task_assignment = get_object_or_404(TaskAssignment, id=id)
     if request.method == 'PATCH':
@@ -277,6 +310,20 @@ def edit_task(request, id):
         task.task_points = data.get('task_points')
         task.save()
         return JsonResponse({'message': 'Task updated successfully'}, status=200)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+@csrf_exempt
+def edit_task_assignment(request, id):
+    task_assignment = get_object_or_404(TaskAssignment, id=id)
+    if request.method == 'PUT':
+        data = json.loads(request.body.decode('utf-8'))
+        form = TaskAssignmentForm(data, instance=task_assignment)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'message': 'Task assignment updated successfully'}, status=200)
+        else:
+            return JsonResponse(form.errors, status=400)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -318,6 +365,50 @@ def create_task_and_assignment(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 @csrf_exempt
+def update_task_and_assignment(request, id):
+    try:
+        task = get_object_or_404(Task, task_id=id)
+        if request.method == 'PATCH':
+            data = json.loads(request.body)
+            task_form = TaskForm(data, instance=task)
+            if task_form.is_valid():
+                task_form.save()
+                new_intern_ids = data.get('interns')
+                task_assignments = TaskAssignment.objects.filter(task_id=id)
+                existing_intern_ids = [ta.intern_id for ta in task_assignments]
+                
+                # Remove task assignments for interns no longer assigned to the task
+                for intern_id in existing_intern_ids:
+                    if intern_id not in new_intern_ids:
+                        TaskAssignment.objects.filter(task_id=id, intern_id=intern_id).delete()
+                
+                # Update or create task assignments for interns assigned to the task
+                for intern_id in new_intern_ids:
+                    intern = get_object_or_404(UserAccount, id=intern_id)
+                    task_assignment_data = {
+                        'intern_id': intern_id,
+                        'task_id': id,
+                        'task_status': data.get('task_status', 'Not Started'),
+                        'date_started': data.get('date_started'),
+                        'file_submission': data.get('file_submission')
+                    }
+                    
+                    task_assignment_form = TaskAssignmentForm(task_assignment_data)
+                    if task_assignment_form.is_valid():
+                        task_assignment_form.save()
+                    else:
+                        return JsonResponse({'error': task_assignment_form.errors}, status=400)
+                    
+                
+                return JsonResponse({'message': 'Task and Task Assignments updated successfully'}, status=200)
+            else:
+                return JsonResponse({'error': task_form.errors}, status=400)
+        else:
+            return JsonResponse({'error': 'Method not allowed'}, status=405)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+@csrf_exempt
 def create_task(request):
     if request.method == 'POST':
         data = request.POST
@@ -351,7 +442,37 @@ def create_task_assignment(request):
         return JsonResponse({'message': 'Task assignment created successfully'}, status=201)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
+@csrf_exempt
+def get_all_task_and_assignments(request):
+    tasks_and_assignments = []
+    tasks_queryset = Task.objects.all()
+    for task in tasks_queryset:
+        task_dict = {
+            'task_id': task.task_id,
+            'task_name': task.task_name,
+            'task_description': task.task_description,
+            'task_date_created': task.task_date_created,
+            'task_due_date': task.task_due_date,
+            'task_estimated_time_to_finish': task.task_estimated_time_to_finish,
+            'task_points': task.task_points,
+            'task_assignments': []
+        }
+        task_assignments_queryset = TaskAssignment.objects.filter(task_id=task.task_id)
+        for task_assignment in task_assignments_queryset:
+            task_assignment_dict = {
+                'id': task_assignment.id,
+                'intern_id': task_assignment.intern_id.id,
+                'first_name': task_assignment.intern_id.first_name,
+                'last_name': task_assignment.intern_id.last_name,
+                'task_status': task_assignment.task_status,
+                'date_started': task_assignment.date_started,
+                'file_submission': task_assignment.file_submission
+            }
+            task_dict['task_assignments'].append(task_assignment_dict)
+        tasks_and_assignments.append(task_dict)
+    return JsonResponse(tasks_and_assignments, safe=False)
+
 # Return all task assignments as a list
 @csrf_exempt
 def get_all_task_assignment(request):
@@ -439,10 +560,10 @@ def delete_task_assignment(request, id):
 
 @csrf_exempt
 def delete_task(request, task_id):
-    task = get_object_or_404(Task, task_id=task_id)
     if request.method == 'DELETE':
         # Delete the task and all connected task assignments
-        task_assignments = TaskAssignment.objects.filter(task_id=id)
+        task = get_object_or_404(Task, task_id=task_id)
+        task_assignments = TaskAssignment.objects.filter(task_id=task_id)
         task_assignments.delete()
         task.delete()
         return JsonResponse({'message': 'Task and connected task assignments deleted successfully'}, status=200)
@@ -621,6 +742,7 @@ def get_unverified_interns(request):
             'start_date': intern.start_date,
             'end_date': intern.end_date,
             'nda_file': intern.nda_file,
+            'required_hours': intern.required_hours,
             'min_workload_threshold': intern.min_workload_threshold,
             'max_workload_threshold': intern.max_workload_threshold,
             'intern_head_status': intern.intern_head_status,
@@ -648,6 +770,7 @@ def get_department_interns(request, department_id):
             'start_date': intern.start_date,
             'end_date': intern.end_date,
             'nda_file': intern.nda_file,
+            'required_hours': intern.required_hours,
             'min_workload_threshold': intern.min_workload_threshold,
             'max_workload_threshold': intern.max_workload_threshold,
             'intern_head_status': intern.intern_head_status,

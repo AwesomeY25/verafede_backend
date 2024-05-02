@@ -19,7 +19,7 @@ class UserAccountForm(forms.ModelForm):
 class InternForm(forms.ModelForm):
     class Meta:
         model = Intern
-        fields = ['birthday', 'gender', 'mobile_number', 'school','degree','year_level','internship_type','start_date','end_date','school_coordinator','department_id','nda_file']
+        fields = ['birthday', 'gender', 'mobile_number', 'school','degree','year_level','internship_type','start_date','end_date','school_coordinator','department_id','nda_file','required_hours']
 
 class TaskForm(forms.ModelForm):
     class Meta:
