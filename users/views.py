@@ -5,7 +5,7 @@ import json
 from django.forms import model_to_dict
 from .forms import UserAccountForm, InternForm, TaskForm, TaskAssignmentForm, ConcernForm, WorkloadForm
 from django.http import JsonResponse, HttpResponse
-from .models import UserAccount, Intern, TaskAssignment, Task, Workload, Concern
+from .models import UserAccount, Intern, TaskAssignment, Task, Workload, Concern, Department
 from django.core import serializers
 import random
 import string
@@ -94,16 +94,47 @@ def create_intern(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 @csrf_exempt
+def get_department_name(department_id):
+    try:
+        department = Department.objects.get(department_id=department_id)
+        return department.department_name
+    except Department.DoesNotExist:
+        return None
+    
+@csrf_exempt
 def get_all_intern(request):
-    # Get query parameter for sorting
-    sort_by = request.GET.get('sort_by', 'internship_type')  # Default sort by intern_id
+    # Get query parameters for filtering and sorting
+    sort_by = request.GET.get('sort_by', 'intern_id')  # Default sort by intern_id
+    intern_status = request.GET.get('intern_status', None)
+    department = request.GET.get('department', None)
+    start_date = request.GET.get('start_date', None)
+    end_date = request.GET.get('end_date', None)
+    search_query = request.GET.get('search_query', None)
 
     # Check if the sort_by field is valid
-    valid_sort_fields = ['gender', 'birthday', 'mobile_number', 'school', 'year_level', 'degree', 'internship_type', 'school_coordinator', 'start_date', 'end_date', 'nda_file']
+    valid_sort_fields = ['intern_id','intern_status', 'department', 'start_date', 'end_date']
     if sort_by not in valid_sort_fields:
         return JsonResponse({'error': 'Invalid sort field'}, status=400)
-    
-    interns = Intern.objects.select_related('user').all()
+
+    # Filter interns based on query parameters
+    qs = Intern.objects.select_related('user')
+    if intern_status:
+        qs = qs.filter(intern_status=intern_status)
+    if department:
+        qs = qs.filter(department=department)
+    if start_date and end_date:
+        qs = qs.filter(start_date__gte=start_date, end_date__lte=end_date)
+    if search_query:
+        qs = qs.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
+
+    # Sort interns based on query parameters
+    interns = qs.order_by(sort_by)
+
+    # Serialize interns to JSON
     interns_data = [
         {
             'intern_id': intern.intern_id,
@@ -114,6 +145,8 @@ def get_all_intern(request):
             'account_type': intern.user.account_type,
             'email': intern.user.email,
             'gender': intern.gender,
+            'department_id': intern.department_id,
+            'department': get_department_name(intern.department_id),  # <--- added this line
             'intern_status': intern.intern_status,
             'birthday': intern.birthday,
             'mobile_number': intern.mobile_number,
@@ -128,58 +161,26 @@ def get_all_intern(request):
             'min_workload_threshold': intern.min_workload_threshold,
             'max_workload_threshold': intern.max_workload_threshold,
             'intern_head_status': intern.intern_head_status,
+            'user_data': {
+                'username': intern.user.username,
+                'first_name': intern.user.first_name,
+                'last_name': intern.user.last_name,
+                'mid_initial': intern.user.mid_initial,
+                'account_type': intern.user.account_type,
+                'email': intern.user.email,
+            }
         }
         for intern in interns
     ]
+
+    # Return JSON response
     return JsonResponse(interns_data, safe=False)
 
 @csrf_exempt
-def get_intern(request):
-    interns = Intern.objects.all()
-
-    # Parse and process query parameters
-    query_params = request.GET
-    filters = {
-        'department': 'department',
-        'start_date': 'start_date__gte',
-        'end_date': 'end_date__lte',
-        'intern_status': 'intern_status',
-        'search_query': 'username__icontains',
-        'searchQuery': '',
-        'sortBy': '',
-        'sortOrder': 'asc'
-    }
-
-    for param, field in filters.items():
-        value = query_params.get(param)
-        if value:
-            interns = interns.filter(**{field: value})
-
-    # Handle search_query to filter by username, first_name, and last_name
-    search_query = query_params.get('search_query')
-    if search_query:
-        interns = interns.filter(
-            Q(username__icontains=search_query) |
-            Q(first_name__icontains=search_query) |
-            Q(last_name__icontains=search_query)
-        )
-
-    # Sort the data based on the query parameters
-    sortBy = query_params.get('sortBy', 'intern_id')
-    sortOrder = query_params.get('sortOrder', 'asc').lower()
-
-    # Ensure validity of sort_order
-    if sortOrder not in ['asc', 'desc']:
-        sortOrder = 'asc'
-
-    if sortOrder == 'desc':
-        interns = interns.order_by(f'-{sortBy}')
-    else:
-        interns = interns.order_by(sortBy)
-
+def get_intern(request, id):
+    intern = get_object_or_404(Intern, intern_id=id)
     # Convert the interns data to a list of dictionaries
-    data = [
-        {
+    data = {
             'intern_id': intern.intern_id,
             'username': intern.user.username,
             'first_name': intern.user.first_name,
@@ -202,10 +203,7 @@ def get_intern(request):
             'nda_file': intern.nda_file,
             'min_workload_threshold': intern.min_workload_threshold,
             'max_workload_threshold': intern.max_workload_threshold,
-            'intern_head_status': intern.intern_head_status,
-        }
-        for intern in interns
-    ]
+            'intern_head_status': intern.intern_head_status,}
 
     return JsonResponse(data, safe=False)
 
@@ -446,7 +444,50 @@ def create_task_assignment(request):
 @csrf_exempt
 def get_all_task_and_assignments(request):
     tasks_and_assignments = []
-    tasks_queryset = Task.objects.all()
+    filter_params = {}
+    sort_by = request.GET.get('sort_by', 'task_name')
+    sort_order = request.GET.get('sort_order', 'asc')
+
+    # Filter by task name
+    task_name_filter = request.GET.get('task_name')
+    if task_name_filter:
+        filter_params['task_name__icontains'] = task_name_filter
+
+    # Filter by task status
+    task_status_filter = request.GET.get('task_status')
+    if task_status_filter:
+        filter_params['task_assignments__task_status'] = task_status_filter
+
+    # Filter by intern name
+    intern_name_filter = request.GET.get('intern_name')
+    if intern_name_filter:
+        filter_params['task_assignments__intern_id__first_name__icontains'] = intern_name_filter
+        filter_params['task_assignments__intern_id__last_name__icontains'] = intern_name_filter
+
+    # Filter by task status
+    task_status_filter = request.GET.get('task_status')
+    if task_status_filter:
+        filter_params['task_assignments__task_status'] = task_status_filter
+
+    # Filter by end date
+    end_date_filter = request.GET.get('end_date')
+    if end_date_filter:
+        filter_params['task_due_date__lte'] = end_date_filter
+
+    # Filter by start date
+    start_date_filter = request.GET.get('start_date')
+    if start_date_filter:
+        filter_params['task_date_created__gte'] = start_date_filter
+
+    tasks_queryset = Task.objects.filter(**filter_params)
+
+    # Sort tasks
+    if sort_by == 'task_name':
+        tasks_queryset = tasks_queryset.order_by('task_name' if sort_order == 'asc' else '-task_name')
+    elif sort_by == 'task_due_date':
+        tasks_queryset = tasks_queryset.order_by('task_due_date' if sort_order == 'asc' else '-task_due_date')
+    # Add more sort options as needed
+
     for task in tasks_queryset:
         task_dict = {
             'task_id': task.task_id,

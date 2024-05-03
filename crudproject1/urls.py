@@ -17,6 +17,7 @@ urlpatterns = [
     # Intern URLs
     path('intern/add/', csrf_exempt(userviews.create_intern), name='create_intern'),
     path('interns/', csrf_exempt(userviews.get_all_intern), name='get_all_intern'),
+    path('intern/<int:id>/', userviews.get_intern, name='get_intern'),
     path('intern/delete/<int:intern_id>/', userviews.delete_intern, name='delete_intern'),
     path('intern/update/<int:intern_id>/', userviews.update_intern, name='update_intern'),
 
