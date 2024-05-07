@@ -44,6 +44,7 @@ class Intern(models.Model):
     # Auto Add
     intern_id = models.AutoField(primary_key=True, verbose_name='Intern ID')
     user = models.OneToOneField(UserAccount, on_delete=models.CASCADE, related_name='intern')
+    # intern_id = dept_acct = models.ForeignKey(UserAccount, null=True, on_delete=models.CASCADE, verbose_name='Intern ID')
     department_id = models.IntegerField()
     # Got
     gender = models.CharField(max_length=20, choices=GENDER_CHOICES)
@@ -156,3 +157,11 @@ class Concern(models.Model):
 
     def __str__(self):
         return f"Concern ID: {self.concern_id}"
+    
+class Subtask(models.Model):
+    subtask_id = models.BigAutoField(primary_key=True)
+    task_id = models.ForeignKey(Task, on_delete=models.CASCADE)
+    subtask_description = models.TextField()
+    
+    def __str__(self):
+        return f"Subtask ID: {self.subtask_id}"

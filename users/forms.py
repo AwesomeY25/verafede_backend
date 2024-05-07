@@ -1,5 +1,5 @@
 from django import forms
-from .models import UserAccount, Intern, Task, TaskAssignment, DepartmentSupervisor, Workload, Concern
+from .models import UserAccount, Intern, Task, TaskAssignment, DepartmentSupervisor, Workload, Concern, Subtask
 
 class UserAccountForm(forms.ModelForm):
     class Meta:
@@ -45,3 +45,8 @@ class ConcernForm(forms.ModelForm):
     class Meta:
         model = Concern
         fields = ["intern_id", "concern_description", "academic_workload", "other_commitments"]
+        
+class SubtaskForm(forms.ModelForm):
+    class Meta:
+        model = Subtask
+        fields = ('task_id', 'subtask_description')

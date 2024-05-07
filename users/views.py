@@ -3,9 +3,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import authenticate, login
 import json
 from django.forms import model_to_dict
-from .forms import UserAccountForm, InternForm, TaskForm, TaskAssignmentForm, ConcernForm, WorkloadForm
+from .forms import UserAccountForm, InternForm, TaskForm, TaskAssignmentForm, ConcernForm, WorkloadForm, SubtaskForm
 from django.http import JsonResponse, HttpResponse
-from .models import UserAccount, Intern, TaskAssignment, Task, Workload, Concern, Department
+from .models import UserAccount, Intern, TaskAssignment, Task, Workload, Concern, Department, Subtask
 from django.core import serializers
 import random
 import string
@@ -215,6 +215,14 @@ def delete_intern(request, intern_id):
         return JsonResponse({'message': 'Intern deleted successfully'}, status=200)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+def delete_concern(request, concern_id):
+    concern = get_object_or_404(Concern, concern_id=concern_id)
+    if request.method == 'DELETE':
+        concern.delete()
+        return JsonResponse({'message': 'Concern deleted successfully'}, status=200)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 @csrf_exempt
 def update_intern(request, intern_id):
@@ -284,7 +292,8 @@ def mark_done(request, id):
         return JsonResponse({'task_assignment': data}, status=200)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
+@csrf_exempt
 def mark_undone(request, id):
     task_assignment = get_object_or_404(TaskAssignment, id=id)
     if request.method == 'PATCH':
